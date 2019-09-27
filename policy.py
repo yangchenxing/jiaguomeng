@@ -10,6 +10,11 @@ infos = [
     Info('自由贸易区建设', Category.Business, True,
          True, [None, None, 1.5, None, None]),
     Info('区域协调发展', Category.House, True, True, [None, None, 1.5, None, None]),
+
+    Info('全面深化改革', Category.All, True, True, [0.2, None, None, None, None]),
+    Info('全面依法治国', Category.All, True, False, [0.2, None, None, None, None]),
+    Info('科教兴国', Category.All, False, True, [0.2, None, None, None, None]),
+    Info('创新驱动', Category.Industry, True, True, [0.6, None, None, None, None]),
 ]
 
 infos = {info.name: info for info in infos}

@@ -131,7 +131,7 @@ if __name__ == '__main__':
             print(f'\t\t{reason.reason}: +{reason.value}')
     print()
     print(
-        f'bese offline income {format_income(best_offline.offline)}, with online income {format_income(best_offline.online)}')
+        f'best offline income {format_income(best_offline.offline)}, with online income {format_income(best_offline.online)}')
     for name, info in best_offline.offline_detail:
         print(
             f'\t{name}: {format_income(info.base)} +{format_income(info.up)} (+{info.up_ratio*100:0.2f}%)')
