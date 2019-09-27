@@ -1,25 +1,24 @@
 # coding: utf-8
 from collections import namedtuple
-from building import Category
 
-Info = namedtuple('Info', ('name', 'targets', 'category', 'value'))
+from ability import Ability, Target
+from building import Category
+from common import IncomeUp
+
+Info = namedtuple('Info', ('name', 'ability'))
 
 infos = [
-    Info('反腐风暴', (), Category.All, 0.2),
+    Info('反腐风暴', Ability(Target.All, 0.2)),
+    Info('服务示范区', Ability(Target('便利店', '菜市场'), 1.5))
 ]
 
 infos = {info.name: info for info in infos}
-
-IncomeUp = namedtuple('IncomeUp', ('reason', 'value'))
 
 
 class Task(object):
     def __init__(self, name):
         self.info = infos[name]
 
-    def calculate_income_up(self, target):
-        if self.info.targets and target.info.name not in self.info.targets:
-            return None
-        if self.info.category != target.info.category and self.info.category != Category.All:
-            return None
-        return IncomeUp(self.info.name, self.info.value)
+    def trigger(self, building, online):
+        for value in self.info.ability.trigger(building, online):
+            yield IncomeUp(self.info.name, value)

@@ -4,20 +4,20 @@ from collections import namedtuple
 from itertools import combinations, product, chain
 
 from building import Building, Category
-from photo import Photo
-from policy import Policy, Light
+from photo import Photo, PhotoSet
+from policy import PolicySet, Policy, Light
 from task import Task
 
 units = ['', 'K', 'M', 'B']
 
-policies = [
+policies = PolicySet(
     Policy('一带一路建设', 5),
-    Policy('自由贸易区建设', 3),
+    Policy('自由贸易区建设', 4),
     Policy('区域协调发展', 3),
-    Light(0.15),
-]
+    Light(0.2)
+)
 
-photos = [
+photos = PhotoSet(
     Photo('中共一大会址'),
     Photo('豫园'),
     Photo('东方明珠电视塔'),
@@ -36,24 +36,24 @@ photos = [
     Photo('义乌小商品'),
     Photo('普陀山'),
     Photo('宁波舟山港'),
-    Photo('绿水青山就是金山银山理念'),
-]
+    Photo('绿水青山就是金山银山理念')
+)
 
 all_buildings = [
-    Building('便利店', 2, 151),
-    Building('钢结构房', 2, 150),
+    Building('便利店', 2, 200),
+    Building('钢结构房', 2, 200),
     Building('平房', 2, 150),
-    Building('居民楼', 2, 150),
-    Building('造纸厂', 2, 150),
-    Building('钢铁厂', 2, 150),
-    Building('学校', 2, 125),
+    Building('居民楼', 2, 175),
+    Building('造纸厂', 2, 175),
+    Building('钢铁厂', 2, 175),
+    Building('学校', 2, 175),
     Building('菜市场', 2, 83),
-    Building('木材厂', 2, 75),
-    Building('木屋', 2, 50),
+    Building('木材厂', 2, 175),
+    Building('木屋', 2, 200),
     Building('服装店', 2, 50),
     Building('企鹅机械', 1, 150),
     Building('民食斋', 1, 148),
-    Building('图书城', 1, 125),
+    Building('图书城', 1, 175),
     Building('纺织厂', 1, 100),
     Building('五金店', 1, 80),
     Building('食品厂', 1, 75),
@@ -61,7 +61,7 @@ all_buildings = [
     Building('零件厂', 1, 50),
 ]
 
-task = Task('反腐风暴')
+task = Task('服务示范区')
 
 CombinationIncome = namedtuple(
     'CombinationIncome', ('online', 'offline', 'buildings', 'online_detail', 'offline_detail'))
@@ -94,7 +94,8 @@ def format_income(value):
     return f'{value:.2f}{units[unit]}'
 
 
-target_level = 175
+target_level = None
+# target_level = 175
 
 
 def format_reasons(reasons):
