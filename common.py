@@ -21,3 +21,7 @@ class Status(Enum):
 
 
 IncomeUp = namedtuple('IncomeUp', ('reason', 'value'))
+
+
+def merge_income_ups(income_ups, reason):
+    return IncomeUp(reason, sum(x.value for x in income_ups))
