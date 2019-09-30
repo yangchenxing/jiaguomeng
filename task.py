@@ -15,7 +15,15 @@ infos = [
     Info('保税商圈', AbilitySet(
         Ability(Target.Business, 0.3), Ability(Target('商贸中心'), 1.0, Ability(Target('便利店'), 1.5)))),
     Info('工业综合体', AbilitySet(
-        Ability(Target.Industry, 0.3), Ability(Target('企鹅机械'), 1.0), Ability(Target('木材厂'), 1.0)))
+        Ability(Target.Industry, 0.3), Ability(Target('企鹅机械'), 1.0), Ability(Target('木材厂'), 1.0))),
+    Info('文明城市', AbilitySet(
+        Ability(Target.All, 0.2), Ability(Target.House, 0.3))),
+    Info('美丽街区', AbilitySet(
+        Ability(Target('花园洋房', 2.0), Ability(
+            Target('钢结构房'), 1.0), Ability(Target('平房'), 1.0)),
+    )),
+    Info('营商环境2', AbilitySet(
+        Ability(Target('食品厂'), 1.0), Ability(Target('菜市场'), 1.0)))
 ]
 
 infos = {info.name: info for info in infos}

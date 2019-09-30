@@ -15,11 +15,11 @@ infos = [
     Info('区域协调发展', Ability(Target.House, (None, None, 1.5, 2.25, 3.0))),
 
     Info('全面深化改革', Ability(Target.All, (0.2, 0.5, 1.0, 1.5, 2.0))),
-    Info('全面依法治国', Ability(Target.All, (0.2, 0.5, None, 1.5, None),
+    Info('全面依法治国', Ability(Target.All, (0.2, 0.5, 1.0, 1.5, 2.0),
                            Status.OnlineOnly)),
-    Info('科教兴国', Ability(Target.All, (0.2, 0.5, None, 1.5, 2.0),
+    Info('科教兴国', Ability(Target.All, (0.2, 0.5, 1.0, 1.5, 2.0),
                          Status.OfflineOnly)),
-    Info('创新驱动', Ability(Target.Industry, (0.6, 1.5, None, 4.5, None))),
+    Info('创新驱动', Ability(Target.Industry, (0.6, 1.5, 3.0, 4.5, 6.0))),
 ]
 
 infos = {info.name: info for info in infos}
