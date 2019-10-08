@@ -1,47 +1,66 @@
 # coding: utf-8
+from decimal import Decimal
 from functools import reduce
 
 from common import Category
 
 
-class GeneralAbility(float):
+class GeneralAbility(Decimal):
     def trigger(self, online, building, times=1.0):
-        return self * times
+        return self * Decimal(times)
 
 
-class OnlineAbility(float):
+class GeneralStepAbility(tuple):
+    # (online, base, step)
     def trigger(self, online, building, times=1.0):
-        return self * times if online else None
+        if self[0] and online or not self[0] and not online:
+            return Decimal(self[1]) + (Decimal(self[2]) * Decimal(times-1))
+        return None
 
 
-class OfflineAbility(float):
+class FixedOfflineAbility(Decimal):
     def trigger(self, online, building, times=1.0):
-        return None if online else self * times
+        return self if not online else None
 
 
-class HouseAbility(float):
+class FixedOnlineAbility(Decimal):
     def trigger(self, online, building, times=1.0):
-        return self * times if building.category == Category.住宅 else None
+        return self if online else None
 
 
-class BusinessAbility(float):
+class OnlineAbility(Decimal):
     def trigger(self, online, building, times=1.0):
-        return self * times if building.category == Category.商业 else None
+        return self * Decimal(times) if online else None
 
 
-class IndustryAbility(float):
+class OfflineAbility(Decimal):
     def trigger(self, online, building, times=1.0):
-        return self * times if building.category == Category.工业 else None
+        return None if online else self * Decimal(times)
+
+
+class HouseAbility(Decimal):
+    def trigger(self, online, building, times=1.0):
+        return self * Decimal(times) if building.category == Category.住宅 else None
+
+
+class BusinessAbility(Decimal):
+    def trigger(self, online, building, times=1.0):
+        return self * Decimal(times) if building.category == Category.商业 else None
+
+
+class IndustryAbility(Decimal):
+    def trigger(self, online, building, times=1.0):
+        return self * Decimal(times) if building.category == Category.工业 else None
 
 
 class BuildingAbility(str):
     def __call__(self, value):
-        return BuildingAbilityInstance((self, value))
+        return BuildingAbilityInstance((self, Decimal(value)))
 
 
 class BuildingAbilityInstance(tuple):
     def trigger(self, online, building, times=1.0):
-        return self[1] * times if building.name == self[0] else None
+        return self[1] * Decimal(times) if building.name == self[0] else None
 
 
 class Ability(object):
@@ -51,6 +70,8 @@ class Ability(object):
     住宅 = HouseAbility
     商业 = BusinessAbility
     工业 = IndustryAbility
+    在线固定 = FixedOnlineAbility
+    离线固定 = FixedOfflineAbility
 
     木屋 = BuildingAbility('木屋')
     居民楼 = BuildingAbility('居民楼')
@@ -88,4 +109,4 @@ class AbilitySet(list):
     def trigger(self, online, building, times=1):
         values = (ability.trigger(online, building) for ability in self)
         values = (value for value in values if value)
-        return sum(values) * times
+        return sum(values) * Decimal(times)
