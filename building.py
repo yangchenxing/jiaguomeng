@@ -1,182 +1,130 @@
 # coding: utf-8
-from collections import namedtuple
-from enum import Enum
-from itertools import chain
-from functools import reduce, partial
-from math import factorial
-from operator import mul
+from collections import namedtuple, defaultdict
+from decimal import Decimal
+from functools import reduce
+
+from ability import Ability, AbilitySet, GeneralStepAbility
+from common import Category, Quality
 
 
-from ability import Ability, AbilitySet, Target
-from common import Category, Status, IncomeUp, merge_income_ups
-
-_income_base = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11,
-                14, 17, 21, 27, 33, 42, 53, 66, 83, 104,
-                130]
+star_ratios = tuple(map(Decimal, (0, 1, 2, 6, 24, 120)))
 
 
-class Quality(Enum):
-    Normal = '普通'
-    Rare = '稀有'
-    Epic = '史诗'
-
-
-Info = namedtuple(
-    'Info', ('name', 'category', 'quality', 'coefficient', 'ability'))
-
-infos = [
-    Info('木屋', Category.House, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('木材厂'), 1.0))),
-    Info('平房', Category.House, Quality.Normal, 1.1,
-         AbilitySet(Ability(Target.House, 0.2))),
-    Info('居民楼', Category.House, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('便利店'), 1.0))),
-    Info('钢结构房', Category.House, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('钢铁厂'), 1.0))),
-    Info('小型公寓', Category.House, Quality.Normal, 1.18, AbilitySet.Empty),
-    Info('人才公寓', Category.House, Quality.Rare, 1.4,
-         AbilitySet(Ability(Target.All, 0.2, Status.OnlineOnly), Ability(Target.Industry, 0.15))),
-    Info('花园洋房', Category.House, Quality.Rare, 1.02,
-         AbilitySet(Ability(Target('商贸中心'), 1.0))),
-    Info('中式小楼', Category.House, Quality.Rare, 1.4,
-         AbilitySet(Ability(Target.All, 0.2, Status.OnlineOnly), Ability(Target.House, 0.15))),
-    Info('空中别墅', Category.House, Quality.Epic, 1.0,
-         AbilitySet(Ability(Target('民食斋'), 1.0), Ability(Target.All, 0.2, Status.OnlineOnly))),
-    Info('复兴公馆', Category.House, Quality.Epic, 1.0,
-         AbilitySet(Ability(Target.All, 0.1, Status.OfflineOnly))),
-
-    Info('便利店', Category.Business, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('居民楼'), 1.0))),
-    Info('五金店', Category.Business, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('零件厂'), 1.0))),
-    Info('服装店', Category.Business, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('纺织厂'), 1.0))),
-    Info('菜市场', Category.Business, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('食品厂'), 1.0))),
-    Info('学校', Category.Business, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('图书城'), 1.0))),
-    Info('图书城', Category.Business, Quality.Rare, 1.0,
-         AbilitySet(Ability(Target('学校'), 1.0), Ability(Target('造纸厂'), 1.0))),
-    Info('商贸中心', Category.Business, Quality.Rare, 1.0,
-         AbilitySet(Ability(Target('花园洋房'), 1.02))),
-    Info('加油站', Category.Business, Quality.Rare, 1.2,
-         AbilitySet(Ability(Target('人民石油'), 0.5), Ability(Target.All, 0.1, Status.OfflineOnly))),
-    Info('民食斋', Category.Business, Quality.Epic, 1.52,
-         AbilitySet(Ability(Target('空中别墅'), 1.0), Ability(Target.All, 0.2, Status.OnlineOnly))),
-    Info('媒体之声', Category.Business, Quality.Epic, 1.615,
-         AbilitySet(Ability(Target.All, 0.1, Status.OfflineOnly), Ability(Target.All, 0.05))),
-
-    Info('木材厂', Category.Industry, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('木屋'), 1.0))),
-    Info('食品厂', Category.Industry, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('菜市场'), 1.0))),
-    Info('造纸厂', Category.Industry, Quality.Normal, 1.0,
-         AbilitySet(Ability(Target('图书城'), 1.0))),
-    Info('水厂', Category.Industry, Quality.Normal, 1.26,
-         AbilitySet(Ability(Target.All, 0.1, Status.OfflineOnly))),
-    Info('电厂', Category.Industry, Quality.Normal, 1.18,
-         AbilitySet(Ability(Target.All, 0.2, Status.OnlineOnly))),
-    Info('钢铁厂', Category.Industry, Quality.Rare, 1.0,
-         AbilitySet(Ability(Target('钢结构房'), 1.0), Ability(Target.Industry, 0.15))),
-    Info('纺织厂', Category.Industry, Quality.Rare, 1.0,
-         AbilitySet(Ability(Target('服装店'), 1.0), Ability(Target.Business, 0.15))),
-    Info('零件厂', Category.Industry, Quality.Rare, 1.0,
-         AbilitySet(Ability(Target('五金店'), 1.0), Ability(Target('企鹅机械'), 0.5))),
-    Info('企鹅机械', Category.Industry, Quality.Epic, 1.33,
-         AbilitySet(Ability(Target('零件厂'), 1.0), Ability(Target.All, 0.1))),
-    Info('人民石油', Category.Industry, Quality.Epic, 1.0,
-         AbilitySet(Ability(Target('加油站'), 1.0), Ability(Target.All, 0.1, Status.OfflineOnly))),
-]
-
-infos = {info.name: info for info in infos}
-
-# check ability
-for info in infos.values():
-    info.ability.validate(infos)
-
-IncomeInfo = namedtuple('IncomeInfo', ('base', 'up', 'up_ratio', 'reasons'))
+RatioUp = namedtuple('RatioUp', ('reason', 'value'))
 
 
 class Building(object):
-    def __init__(self, name, star, level):
-        self.info = infos[name]
-        self.star = star
-        self.level = level if level <= 200 else 200
-        self.income = self._calculate_base_income()
+    def __init__(self, name, category, quality, base_ratio, abilities, stars=0):
+        self.name = name
+        self.category = category
+        self.quality = quality
+        self.base_ratio = Decimal(base_ratio)
+        self.abilities = abilities
+        self.stars = stars
 
-    def set_level(self, level):
-        self.level = level
-        self.income = self._calculate_base_income()
+    def star(self, stars):
+        self.stars = stars
+        return self
 
-    def set_global_income_up(self, photos, policies, task):
-        self.global_reasons = {
-            True: [
-                merge_income_ups(photos.trigger(self, True), '照片'),
-                merge_income_ups(policies.trigger(self, True), '政策'),
-            ],
-            False:  [
-                merge_income_ups(photos.trigger(self, False), '照片'),
-                merge_income_ups(policies.trigger(self, False), '政策'),
-            ],
-        }
-        task_online = list(task.trigger(self, True))
-        task_offline = list(task.trigger(self, False))
-        if task_online:
-            self.global_reasons[True].append(
-                merge_income_ups(task_online, '任务'))
-        if task_offline:
-            self.global_reasons[False].append(
-                merge_income_ups(task_offline, '任务'))
-        self.global_ups = {
-            True: reduce(mul, ((1+up.value) for up in self.global_reasons[True]), 1)-1,
-            False: reduce(mul, ((1+up.value) for up in self.global_reasons[False]), 1)-1,
-        }
-
-    def calculate_building_ups(self, buildings):
-        self.building_ups = {
-            True: dict(self.calculate_building_ups_with_status(True, buildings)),
-            False: dict(self.calculate_building_ups_with_status(False, buildings)),
-        }
-
-    def calculate_building_ups_with_status(self, online, buildings):
-        for cooperator in buildings:
-            ups = list(IncomeUp(f'{cooperator.info.name}[{"*"*cooperator.star}]',
-                                value * cooperator.star) for value in cooperator.info.ability.trigger(self, online))
-            if ups:
-                yield (cooperator.info.name, ups)
-
-    def __str__(self):
-        return self.info.name
+    def ability(self, abilities):
+        self.abilities = abilities
+        return self
 
     def __repr__(self):
-        return self.info.name
+        return f'{self.name}[{"*"*self.stars}]'
 
-    def _calculate_base_income(self):
-        n = (self.level - 1) // 10
-        return (sum(_income_base[: n]) * 10 +
-                _income_base[n] * (self.level - n * 10)) * factorial(self.star) * self.info.coefficient
+    def prepare(self, buildings, abilities):
+        self.global_ratios = {
+            True: sorted([RatioUp(name, ability.trigger(True, self)) for name, ability in abilities.items()]),
+            False: sorted([RatioUp(name, ability.trigger(False, self)) for name, ability in abilities.items()]),
+        }
+        self.global_ratio = {
+            True: Decimal(reduce(lambda x, y: x * (y.value + 1), self.global_ratios[True], 1)),
+            False: Decimal(reduce(lambda x, y: x * (y.value + 1), self.global_ratios[False], 1)),
+        }
+        self.building_ratios = {
+            True: {building.name: building.abilities.trigger(True, self, building.stars) for building in buildings if building.ability},
+            False: {building.name: building.abilities.trigger(False, self, building.stars) for building in buildings if building.ability},
+        }
+        self.building_ratios = {
+            True: {key: value for key, value in self.building_ratios[True].items() if value},
+            False: {key: value for key, value in self.building_ratios[False].items() if value},
+        }
 
-    def calculate_income(self, online, buildings):
-        # 建筑加成
-        # building_reasons = list(self.trigger_ability(buildings, online))
-        building_ups = self.building_ups[online]
-        #print('building ups:', building_ups)
-        building_reasons = list(chain(
-            *(building_ups[building.info.name] for building in buildings if building.info.name in building_ups)))
-        #print('building reasons:', building_reasons)
-        building_up = sum(up.value for up in building_reasons)
-        # 全局加成
-        global_reasons = self.global_reasons[online]
-        global_up = self.global_ups[online]
-        total_up = (1+building_up) * (1+global_up) - 1
-        base = self.income * (0.5 if not online else 1.0)
-        return IncomeInfo(base, base * total_up, total_up, building_reasons + global_reasons)
-
-    def trigger_ability(self, buildings, online):
-        for cooperator in buildings:
-            for value in cooperator.info.ability.trigger(self, online):
-                yield IncomeUp(f'{cooperator.info.name}[{"*"*cooperator.star}]', value * cooperator.star)
+    def trigger(self, online, buildings):
+        building_ratios = self.building_ratios[online]
+        building_ratios = [RatioUp(repr(building), building_ratios[building.name])
+                           for building in buildings if building.name in building_ratios]
+        building_ratio = Decimal(sum(up.value for up in building_ratios) + 1)
+        details = [RatioUp('基础', self.base_ratio),
+                   RatioUp('星级', star_ratios[self.stars])] + \
+            building_ratios + \
+            self.global_ratios[online]
+        ratio = self.base_ratio * \
+            building_ratio * \
+            star_ratios[self.stars] * \
+            self.global_ratio[online]
+        return ratio, details
 
 
-for name in infos.keys():
-    setattr(Building, name, partial(Building, name))
+木屋 = Building('木屋', Category.住宅, Quality.普通, 1.0,
+              Ability.木材厂(1.0))
+居民楼 = Building('居民楼', Category.住宅, Quality.普通, 1.0,
+               Ability.便利店(1.0))
+钢结构房 = Building('钢结构房', Category.住宅, Quality.普通, 1.0,
+                Ability.钢铁厂(1.0))
+平房 = Building('平房', Category.住宅, Quality.普通, 1.1,
+              Ability.住宅(0.2))
+小型公寓 = Building('小型公寓', Category.住宅, Quality.普通, 1.18, AbilitySet())
+人才公寓 = Building('人才公寓', Category.住宅, Quality.稀有, 1.4,
+                AbilitySet([Ability.在线(0.2), Ability.工业(0.15)]))
+花园洋房 = Building('花园洋房', Category.住宅, Quality.稀有, 1.02,
+                Ability.商贸中心(1.0))
+中式小楼 = Building('中式小楼', Category.住宅, Quality.稀有, 1.0,
+                AbilitySet([Ability.在线(0.2), Ability.住宅(0.15)]))
+空中别墅 = Building('空中别墅', Category.住宅, Quality.史诗, 1.0,
+                AbilitySet([Ability.民食斋(1.0), Ability.在线(0.2)]))
+复兴公馆 = Building('复兴公馆', Category.住宅, Quality.史诗, 1.0,
+                Ability.离线(0.1))
+
+便利店 = Building('便利店', Category.商业, Quality.普通, 1.0,
+               Ability.居民楼(1.0))
+五金店 = Building('五金店', Category.商业, Quality.普通, 1.0,
+               Ability.零件厂(1.0))
+服装店 = Building('服装店', Category.商业, Quality.普通, 1.0,
+               Ability.纺织厂(1.0))
+菜市场 = Building('菜市场', Category.商业, Quality.普通, 1.0,
+               Ability.食品厂(1.0))
+学校 = Building('学校', Category.商业, Quality.普通, 1.0,
+              Ability.图书城(1.0))
+图书城 = Building('图书城', Category.商业, Quality.稀有, 1.0,
+               AbilitySet([Ability.学校(1.0), Ability.造纸厂(1.0)]))
+商贸中心 = Building('商贸中心', Category.商业, Quality.稀有, 1.0,
+                Ability.花园洋房(1.0))
+加油站 = Building('加油站', Category.商业, Quality.稀有, 1.2,
+               AbilitySet([Ability.人民石油(0.5), Ability.离线(0.1)]))
+民食斋 = Building('民食斋', Category.商业, Quality.史诗, 1.52,
+               AbilitySet([Ability.空中别墅(1.0), Ability.在线(0.2)]))
+媒体之声 = Building('媒体之声', Category.商业, Quality.史诗, 1.615,
+                AbilitySet([Ability.离线(0.1), Ability.所有(0.05)]))
+
+木材厂 = Building('木材厂', Category.工业, Quality.普通, 1.0,
+               Ability.木屋(1.0))
+食品厂 = Building('食品厂', Category.工业, Quality.普通, 1.0,
+               Ability.菜市场(1.0))
+造纸厂 = Building('造纸厂', Category.工业, Quality.普通, 1.0,
+               Ability.图书城(1.0))
+水厂 = Building('水厂', Category.工业, Quality.普通, 1.26,
+              GeneralStepAbility((False, 0.1, 0.05)))
+电厂 = Building('电厂', Category.工业, Quality.普通, 1.18,
+              Ability.在线(0.1))
+钢铁厂 = Building('钢铁厂', Category.工业, Quality.稀有, 1.0,
+               AbilitySet([Ability.钢结构房(1.0), Ability.工业(0.15)]))
+纺织厂 = Building('纺织厂', Category.工业, Quality.稀有, 1.0,
+               AbilitySet([Ability.服装店(1.0), Ability.商业(0.15)]))
+零件厂 = Building('零件厂', Category.工业, Quality.稀有, 1.0,
+               AbilitySet([Ability.五金店(1.0), Ability.企鹅机械(0.5)]))
+企鹅机械 = Building('企鹅机械', Category.工业, Quality.史诗, 1.33,
+                AbilitySet([Ability.零件厂(1.0), Ability.所有(0.1)]))
+人民石油 = Building('人民石油', Category.工业, Quality.史诗, 1.0,
+                AbilitySet([Ability.加油站(1.0), Ability.离线(0.1)]))

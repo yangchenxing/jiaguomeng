@@ -1,27 +1,14 @@
 #coding: utf-8
-from collections import namedtuple
 from enum import Enum
 
 
 class Category(Enum):
-    House = '住宅'
-    Business = '商业'
-    Industry = '工业'
-    All = '所有'
+    住宅 = 1
+    商业 = 2
+    工业 = 3
 
 
-Category.values = set((Category.House, Category.Business,
-                       Category.Industry, Category.All))
-
-
-class Status(Enum):
-    Any = 0
-    OnlineOnly = 1
-    OfflineOnly = 2
-
-
-IncomeUp = namedtuple('IncomeUp', ('reason', 'value'))
-
-
-def merge_income_ups(income_ups, reason):
-    return IncomeUp(reason, sum(x.value for x in income_ups))
+class Quality(Enum):
+    普通 = 0
+    稀有 = 1
+    史诗 = 2
