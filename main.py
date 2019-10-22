@@ -17,7 +17,7 @@ all_buildings = [
     building.人才公寓.star(4),
     building.花园洋房.star(4),
     building.中式小楼.star(4),
-    building.空中别墅.star(3),
+    building.空中别墅.star(4),
     building.复兴公馆.star(3),
 
     building.便利店.star(5),
